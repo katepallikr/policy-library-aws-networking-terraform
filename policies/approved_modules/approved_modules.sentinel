@@ -1,17 +1,17 @@
 import "tfplan/v2" as tfplan
 import "strings"
 
-# Define the list of approved modules with their respective approved versions
+# Define the list of approved modules
 approved_modules = {
-    "hashicorp/aws": ["3.0.0", "3.1.0", "3.2.0"],
-    "hashicorp/azurerm": ["2.0.0", "2.1.0"],
-    "hashicorp/google": ["3.0.0", "3.1.0"],
+    "hashicorp/aws" = ["3.0.0", "3.1.0", "3.2.0"],
+    "hashicorp/azurerm" = ["2.0.0", "2.1.0"],
+    "hashicorp/google" = ["3.0.0", "3.1.0"]
 }
 
 # Function to check if a module is approved
 is_approved_module = func(module_name, module_version) {
     approved_versions = approved_modules[module_name]
-    return approved_versions != null and module_version in approved_versions
+    return approved_versions is not null and module_version in approved_versions
 }
 
 # Get all module calls from the plan
@@ -30,21 +30,4 @@ for module_name, module_call in module_calls {
 # Main rule to enforce the policy
 main = rule {
     all_approved
-}
-
-# Rule to provide detailed feedback for non-approved modules
-violation[message] {
-    some module_name
-    module_call = module_calls[module_name]
-    module_version = module_call.version
-    not is_approved_module(module_name, module_version)
-    message = sprintf("Module %s with version %s is not approved.", [module_name, module_version])
-}
-
-# Rule to list approved modules for transparency
-approved[module_name] {
-    some module_name
-    module_call = module_calls[module_name]
-    module_version = module_call.version
-    is_approved_module(module_name, module_version)
 }
