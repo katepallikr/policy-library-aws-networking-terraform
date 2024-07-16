@@ -1,36 +1,50 @@
-import "tfconfig/v2" as tfconfig
+import "tfplan/v2" as tfplan
 import "strings"
 
-# Define the list of approved modules with their respective sources
-approved_modules = [
-    "app.terraform.io/hashicorp-kranthi/vpc/aws",
-    "app.terraform.io/hashicorp-kranthi/ec2-instance/aws",
-    "app.terraform.io/hashicorp-kranthi/rds/aws"
-]
-
-# Function to check if a module's source is approved
-check_module_source = func(source) {
-    approved = false
-    for approved_module in approved_modules {
-        if strings.has_prefix(source, approved_module) {
-            approved = true
-            break
-        }
-    }
-    return approved
+# Define the list of approved modules with their respective approved versions
+approved_modules = {
+    "hashicorp/aws": ["3.0.0", "3.1.0", "3.2.0"],
+    "hashicorp/azurerm": ["2.0.0", "2.1.0"],
+    "hashicorp/google": ["3.0.0", "3.1.0"],
 }
 
-# Get all module calls from the configuration
-module_calls = tfconfig.module_calls
+# Function to check if a module is approved
+is_approved_module = func(module_name, module_version) {
+    approved_versions = approved_modules[module_name]
+    return approved_versions != null and module_version in approved_versions
+}
 
-# Rule to validate if all modules are approved
-modules_validated = rule {
-    all module_calls as module {
-        check_module_source(module.source)
+# Get all module calls from the plan
+module_calls = tfplan.module_calls
+
+# Iterate over each module call and check if it is approved
+all_approved = true
+for module_name, module_call in module_calls {
+    module_version = module_call.version
+    if not is_approved_module(module_name, module_version) {
+        all_approved = false
+        print("Module %s with version %s is not approved." % [module_name, module_version])
     }
 }
 
 # Main rule to enforce the policy
 main = rule {
-    modules_validated
+    all_approved
+}
+
+# Rule to provide detailed feedback for non-approved modules
+violation[message] {
+    some module_name
+    module_call = module_calls[module_name]
+    module_version = module_call.version
+    not is_approved_module(module_name, module_version)
+    message = sprintf("Module %s with version %s is not approved.", [module_name, module_version])
+}
+
+# Rule to list approved modules for transparency
+approved[module_name] {
+    some module_name
+    module_call = module_calls[module_name]
+    module_version = module_call.version
+    is_approved_module(module_name, module_version)
 }
