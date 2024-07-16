@@ -5,17 +5,19 @@ import "strings"
 approved_modules = [
     "app.terraform.io/hashicorp-kranthi/vpc/aws",
     "app.terraform.io/hashicorp-kranthi/ec2-instance/aws",
-    "app.terraform.io/hashicorp-kranthi/rds/aws",
+    "app.terraform.io/hashicorp-kranthi/rds/aws"
 ]
 
 # Function to check if a module's source is approved
 check_module_source = func(source) {
-    for approved in approved_modules {
-        if strings.has_prefix(source, approved) {
-            return true
+    approved = false
+    for approved_module in approved_modules {
+        if strings.has_prefix(source, approved_module) {
+            approved = true
+            break
         }
     }
-    return false
+    return approved
 }
 
 # Get all module calls from the configuration
@@ -23,7 +25,7 @@ module_calls = tfconfig.module_calls
 
 # Rule to validate if all modules are approved
 modules_validated = rule {
-    all module_calls as _, module {
+    all module_calls as module {
         check_module_source(module.source)
     }
 }
