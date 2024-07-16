@@ -5,7 +5,7 @@ import "strings"
 approved_modules = [
     "app.terraform.io/hashicorp-kranthi/vpc/aws",
     "app.terraform.io/hashicorp-kranthi/ec2-instance/aws",
-    "app.terraform.io/hashicorp-kranthi/rds/aws"
+    "app.terraform.io/hashicorp-kranthi/rds/aws",
 ]
 
 # Function to check if a module's source is approved
