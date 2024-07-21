@@ -1,33 +1,31 @@
-import "tfplan/v2" as tfplan
+import "tfconfig/v2" as tfconfig
 import "strings"
 
-# Define the list of approved modules
-approved_modules = {
-    "hashicorp/aws" = ["3.0.0", "3.1.0", "3.2.0"],
-    "hashicorp/azurerm" = ["2.0.0", "2.1.0"],
-    "hashicorp/google" = ["3.0.0", "3.1.0"]
+# List of approved module sources
+approved_module_sources = [
+    "app.terraform.io/Cloud-Operations/s3-bucket/aws",
+    "app.terraform.io/Cloud-Operations/vpc/aws",
+    "hashicorp/consul/aws",
+    "terraform-aws-modules/vpc/aws",
+]
+
+# Function to check if a module source is approved
+is_approved_module = func(source) {
+    for approved_source in approved_module_sources {
+        if strings.has_prefix(source, approved_source) {
+            return true
+        }
+    }
+    return false
 }
 
-# Function to check if a module is approved
-is_approved_module = func(module_name, module_version) {
-    approved_versions = approved_modules[module_name]
-    return approved_versions is not null and module_version in approved_versions
-}
-
-# Get all module calls from the plan
-module_calls = tfplan.module_calls
-
-# Iterate over each module call and check if it is approved
-all_approved = true
-for module_name, module_call in module_calls {
-    module_version = module_call.version
-    if not is_approved_module(module_name, module_version) {
-        all_approved = false
-        print("Module %s with version %s is not approved." % [module_name, module_version])
+# Main rule
+approved_modules = rule {
+    all tfconfig.module_calls as _, module {
+        is_approved_module(module.source)
     }
 }
 
-# Main rule to enforce the policy
 main = rule {
-    all_approved
+    approved_modules
 }
