@@ -49,3 +49,20 @@ print(rule {
     not main
     message := sprintf("The following modules are not approved: %v", [violating_modules])
 })
+# Helper function to get unapproved module names
+get_unapproved_modules = func() {
+  unapproved = []
+  for module_call in tfconfig.module_calls {
+    if not is_approved_module(module_call.source) {
+      append(unapproved, module_call.name)
+    }
+  }
+  return unapproved
+}
+
+
+# Error message using the helper function
+print(rule {
+    not main
+    message := sprintf("The following modules are not approved: %v", [get_unapproved_modules()])
+})
