@@ -12,5 +12,5 @@ policy "restrict-all-vpc-traffic-acl-rules" {
 }
 policy "approved-modules" {
     enforcement_level = "soft-mandatory"
-    source = "./approved-modules.sentinel"
+    source = "./policies/approved-modules/approved-modules.sentinel"
 }
