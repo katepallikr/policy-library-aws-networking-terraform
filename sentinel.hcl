@@ -10,3 +10,7 @@ policy "deny-public-rdp-acl-rules" {
 policy "restrict-all-vpc-traffic-acl-rules" {
   source = "./policies/restrict-all-vpc-traffic-acl-rules/restrict-all-vpc-traffic-acl-rules.sentinel"
 }
+policy "approved-modules" {
+    enforcement_level = "soft-mandatory"
+    source = "./approved-modules.sentinel"
+}
