@@ -4,11 +4,11 @@ import "strings"
 
 # Define the main rule for resource changes
 resource_changes_rule = rule {
-  all tfplan.resource_changes as rc {
-    all rc.change.actions as action {
-      action in ["create", "update"]
+    all tfplan.resource_changes as rc {
+        all rc.change.actions as action {
+            action in ["create", "update"]
+        }
     }
-  }
 }
 
 # List of approved module sources
@@ -29,14 +29,17 @@ is_approved_module = func(source) {
     return false
 }
 
-# Rule to check if all modules are approved
+# Rule to check if all modules are approved (Corrected syntax)
 approved_modules_rule = rule {
-    all tfconfig.module_calls as module {
-        is_approved_module(module.source)
+    all tfconfig.module_calls as module_call {  // Iterate with 'as'
+        is_approved_module(module_call.source)  // Access source property
     }
 }
 
+# Enhanced output with more context
+violating_modules = [module_call.source | tfconfig.module_calls as module_call { not is_approved_module(module_call.source) }]
+
 # Main rule
 main = rule {
-    resource_changes_rule and approved_modules_rule
+    resource_changes_rule and approved_modules_rule and count(violating_modules) == 0
 }
