@@ -1,8 +1,7 @@
 import "tfplan/v2" as tfplan
-import "tfconfig"
 import "strings"
 
-# Define the main rule for resource changes
+# Define the main rule for resource changes (Unchanged)
 resource_changes_rule = rule {
     all tfplan.resource_changes as rc {
         all rc.change.actions as action {
@@ -11,7 +10,7 @@ resource_changes_rule = rule {
     }
 }
 
-# List of approved module sources
+# List of approved module sources (Unchanged)
 approved_module_sources = [
     "app.terraform.io/Cloud-Operations/s3-bucket/aws",
     "app.terraform.io/Cloud-Operations/vpc/aws",
@@ -19,7 +18,7 @@ approved_module_sources = [
     "terraform-aws-modules/vpc/aws",
 ]
 
-# Function to check if a module source is approved
+# Function to check if a module source is approved (Unchanged)
 is_approved_module = func(source) {
     for approved_source in approved_module_sources {
         if strings.has_prefix(source, approved_source) {
@@ -29,39 +28,34 @@ is_approved_module = func(source) {
     return false
 }
 
-# Rule to check if all modules are approved (Corrected syntax)
+# Rule to check if all modules are approved (Modified)
 approved_modules_rule = rule {
-    all tfconfig.module_calls as module_call {  // Iterate with 'as'
-        is_approved_module(module_call.source)  // Access source property
+    all tfplan.resource_changes as rc {
+        all rc.module_calls as module_call {
+            is_approved_module(module_call)  # Use module_call directly
+        }
     }
 }
 
-# Enhanced output with more context
-violating_modules = [module_call.name | tfconfig.module_calls as module_call { not is_approved_module(module_call.source) }]
+# Helper function to get unapproved module names (Modified)
+get_unapproved_modules = func() {
+    unapproved = []
+    for rc in tfplan.resource_changes {
+        for module_call in rc.module_calls {
+            if not is_approved_module(module_call) {
+                append(unapproved, module_call)  # Store the entire module call
+            }
+        }
+    }
+    return unapproved
+}
 
 # Main rule
 main = rule {
-    resource_changes_rule and approved_modules_rule and count(violating_modules) == 0
+    resource_changes_rule and approved_modules_rule and count(get_unapproved_modules()) == 0
 }
 
 # Updated error message to display module names
-print(rule {
-    not main
-    message := sprintf("The following modules are not approved: %v", [violating_modules])
-})
-# Helper function to get unapproved module names
-get_unapproved_modules = func() {
-  unapproved = []
-  for module_call in tfconfig.module_calls {
-    if not is_approved_module(module_call.source) {
-      append(unapproved, module_call.name)
-    }
-  }
-  return unapproved
-}
-
-
-# Error message using the helper function
 print(rule {
     not main
     message := sprintf("The following modules are not approved: %v", [get_unapproved_modules()])
