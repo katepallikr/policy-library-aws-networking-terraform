@@ -37,9 +37,15 @@ approved_modules_rule = rule {
 }
 
 # Enhanced output with more context
-violating_modules = [module_call.source | tfconfig.module_calls as module_call { not is_approved_module(module_call.source) }]
+violating_modules = [module_call.name | tfconfig.module_calls as module_call { not is_approved_module(module_call.source) }]
 
 # Main rule
 main = rule {
     resource_changes_rule and approved_modules_rule and count(violating_modules) == 0
 }
+
+# Updated error message to display module names
+print(rule {
+    not main
+    message := sprintf("The following modules are not approved: %v", [violating_modules])
+})
