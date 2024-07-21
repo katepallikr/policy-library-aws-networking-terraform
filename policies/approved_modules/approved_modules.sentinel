@@ -24,17 +24,17 @@ approved_modules = all tfconfig.module_calls as _, module {
   is_approved_module(module.source)
 }
 
-# Main rule
-main = rule {
-  approved_modules
-}
-
-# Print violation message if any
+# Get unapproved modules
 unapproved_modules = filter tfconfig.module_calls as name, module {
   not is_approved_module(module.source)
 }
 
-violation_message = rule {
-  length(unapproved_modules) > 0
+# Print violation message if any
+if length(unapproved_modules) > 0 {
   print("The following modules are not approved:", keys(unapproved_modules))
+}
+
+# Main rule
+main = rule {
+  approved_modules
 }
