@@ -1,5 +1,14 @@
-import "tfconfig/v2" as tfconfig
+import "tfplan/v2" as tfplan
 import "strings"
+
+# Define the main rule
+main = rule {
+  all tfplan.resource_changes as _, rc {
+    all rc.change.actions as _, action {
+      action in ["create", "update"]
+    }
+  }
+}
 
 # List of approved module sources
 approved_module_sources = [
