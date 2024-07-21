@@ -1,15 +1,16 @@
 import "tfplan/v2" as tfplan
 import "strings"
 
-# Define the main rule for resource changes
-resource_changes_rule = rule {
-    all tfplan.resource_changes as rc {
-        all rc.change.actions as action {
-            action in ["create", "update"]
-        }
-    }
-}
 
+# Get unapproved modules
+unapproved_modules = []
+for rc in tfplan.resource_changes {
+  for module_call in rc.module_calls {
+    if not is_approved_module(module_call) {
+      append(unapproved_modules, module_call)
+    }
+  }
+}
 # List of approved module sources
 approved_module_sources = [
     "app.terraform.io/Cloud-Operations/s3-bucket/aws",
