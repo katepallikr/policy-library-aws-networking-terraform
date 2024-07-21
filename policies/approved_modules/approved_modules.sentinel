@@ -1,7 +1,7 @@
 import "tfplan/v2" as tfplan
 import "strings"
 
-# Define the main rule for resource changes (Unchanged)
+# Define the main rule for resource changes
 resource_changes_rule = rule {
     all tfplan.resource_changes as rc {
         all rc.change.actions as action {
@@ -10,7 +10,7 @@ resource_changes_rule = rule {
     }
 }
 
-# List of approved module sources (Unchanged)
+# List of approved module sources
 approved_module_sources = [
     "app.terraform.io/Cloud-Operations/s3-bucket/aws",
     "app.terraform.io/Cloud-Operations/vpc/aws",
@@ -18,7 +18,7 @@ approved_module_sources = [
     "terraform-aws-modules/vpc/aws",
 ]
 
-# Function to check if a module source is approved (Unchanged)
+# Function to check if a module source is approved
 is_approved_module = func(source) {
     for approved_source in approved_module_sources {
         if strings.has_prefix(source, approved_source) {
@@ -28,7 +28,7 @@ is_approved_module = func(source) {
     return false
 }
 
-# Rule to check if all modules are approved (Modified)
+# Rule to check if all modules are approved
 approved_modules_rule = rule {
     all tfplan.resource_changes as rc {
         all rc.module_calls as module_call {
@@ -37,26 +37,16 @@ approved_modules_rule = rule {
     }
 }
 
-# Helper function to get unapproved module names (Modified)
-get_unapproved_modules = func() {
-    unapproved = []
-    for rc in tfplan.resource_changes {
-        for module_call in rc.module_calls {
-            if not is_approved_module(module_call) {
-                append(unapproved, module_call)  # Store the entire module call
-            }
-        }
-    }
-    return unapproved
-}
+# Get unapproved modules
+unapproved_modules = [module_call | tfplan.resource_changes as rc, module_call in rc.module_calls { not is_approved_module(module_call) }]
 
 # Main rule
 main = rule {
-    resource_changes_rule and approved_modules_rule and count(get_unapproved_modules()) == 0
+    resource_changes_rule and approved_modules_rule and count(unapproved_modules) == 0
 }
 
 # Updated error message to display module names
 print(rule {
     not main
-    message := sprintf("The following modules are not approved: %v", [get_unapproved_modules()])
+    message := sprintf("The following modules are not approved: %v", [unapproved_modules])
 })
