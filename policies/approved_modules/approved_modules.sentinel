@@ -54,6 +54,6 @@ main = rule {
 # Print violation message if any
 violation_message = rule {
   unapproved = get_unapproved_modules()
-  print(sprintf("The following modules are not approved: %v", [unapproved]))
+  print(sprintf("The following modules are not approved: %v", unapproved))
   length(unapproved) == 0
 }
